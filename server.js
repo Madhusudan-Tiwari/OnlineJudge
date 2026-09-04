@@ -2,6 +2,24 @@ const express = require("express")
 
 const app = express();
 
-app.get("/hello", (req, res) => {res.send("Hello from online judge")});
+const problems =
+[
+    {
+        id: 1,
+        title: "Two Sum",
+        difficulty: "Easy"
+    },
+    {
+        id: 2,
+        title: "Binary Search",
+        difficulty: "Easy"
+    },
+    {
+        id: 3,
+        title: "Dijkstra",
+        difficulty: "Hard"
+    }
+];
 
-app.listen(3000,() => {console.log("Server running on port 3000");});
+app.get("/problems", (req, res) => {res.json(problems);});
+app.listen(3000, () => {console.log("Server running on port 3000");});
