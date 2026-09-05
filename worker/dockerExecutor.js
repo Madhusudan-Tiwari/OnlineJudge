@@ -23,7 +23,8 @@ function runDocker(sourceCode, input) {
 
             // Limit container to one CPU
             "--cpus=1",
-
+            "--memory=256m",
+            "--memory-swap=256m",
             // Mount source code as read-only
             "-v",
             `${sourcePath}:/tmp/main.cpp:ro`,
@@ -115,6 +116,13 @@ function runDocker(sourceCode, input) {
             } else if (code === 100) {
                 resolve({
                     status: "COMPILATION_ERROR",
+                    output,
+                    error,
+                    exitCode: code
+                });
+            } else if (code === 137) {
+                resolve({
+                    status: "MEMORY_LIMIT_EXCEEDED",
                     output,
                     error,
                     exitCode: code
