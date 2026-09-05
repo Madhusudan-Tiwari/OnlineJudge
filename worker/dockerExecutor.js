@@ -21,6 +21,10 @@ function runDocker(sourceCode, input) {
             "--rm",
             "-i",
 
+            // Limit container to one CPU
+            "--cpus=1",
+
+            // Mount source code as read-only
             "-v",
             `${sourcePath}:/tmp/main.cpp:ro`,
 
@@ -30,6 +34,7 @@ function runDocker(sourceCode, input) {
             "-c",
             `
             g++ /tmp/main.cpp -o /tmp/main 2>/tmp/compile_error
+
             if [ $? -ne 0 ]; then
                 cat /tmp/compile_error
                 exit 100
@@ -43,6 +48,26 @@ function runDocker(sourceCode, input) {
 
         let output = "";
         let error = "";
+        let finished = false;
+
+        const timeout = setTimeout(() => {
+            if (finished) {
+                return;
+            }
+
+            finished = true;
+
+            child.kill("SIGKILL");
+
+            cleanup(sourcePath);
+
+            resolve({
+                status: "TIME_LIMIT_EXCEEDED",
+                output,
+                error: "Execution time exceeded",
+                exitCode: null
+            });
+        }, 2000);
 
         child.stdout.on("data", (data) => {
             output += data.toString();
@@ -53,16 +78,31 @@ function runDocker(sourceCode, input) {
         });
 
         child.on("error", (err) => {
+            if (finished) {
+                return;
+            }
+
+            finished = true;
+
+            clearTimeout(timeout);
             cleanup(sourcePath);
 
             resolve({
                 status: "RUNTIME_ERROR",
                 output: "",
-                error: err.message
+                error: err.message,
+                exitCode: null
             });
         });
 
         child.on("close", (code) => {
+            if (finished) {
+                return;
+            }
+
+            finished = true;
+
+            clearTimeout(timeout);
             cleanup(sourcePath);
 
             if (code === 0) {
