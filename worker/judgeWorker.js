@@ -1,4 +1,5 @@
 const pool = require("../database/db");
+const judgeSubmission = require("./judge");
 
 async function getNextSubmission() {
     const result = await pool.query(`
@@ -18,6 +19,22 @@ async function getNextSubmission() {
     return result.rows[0];
 }
 
+async function updateSubmission(submissionId, result) {
+    await pool.query(
+        `UPDATE submissions
+         SET status = $1,
+             error_details = $2,
+             failed_test_case_id = $3
+         WHERE id = $4`,
+        [
+            result.status,
+            result.error_details,
+            result.failed_test_case_id,
+            submissionId
+        ]
+    );
+}
+
 async function worker() {
     console.log("Judge worker started");
 
@@ -30,14 +47,26 @@ async function worker() {
                     `Picked submission #${submission.id}`
                 );
 
-                // Actual judging will be added here.
+                const result = await judgeSubmission(submission);
+
+                await updateSubmission(
+                    submission.id,
+                    result
+                );
+
+                console.log(
+                    `Submission #${submission.id}: ${result.status}`
+                );
             } else {
                 await new Promise(resolve =>
                     setTimeout(resolve, 1000)
                 );
             }
         } catch (error) {
-            console.error("Worker error:", error.message);
+            console.error(
+                "Worker error:",
+                error.message
+            );
         }
     }
 }
