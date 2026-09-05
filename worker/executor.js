@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const { execFile } = require("child_process");
+const { execFile, spawn } = require("child_process");
 
 function runCpp(sourceCode, input = "") {
     return new Promise((resolve) => {
@@ -25,26 +25,53 @@ function runCpp(sourceCode, input = "") {
                     return;
                 }
 
-                execFile(
-                    executablePath,
-                    (runtimeError, stdout, stderr) => {
-                        cleanup(sourcePath, executablePath);
+                console.log("Executable:", executablePath);
+                console.log("Exists:", fs.existsSync(executablePath));
 
-                        if (runtimeError) {
-                            resolve({
-                                status: "RUNTIME_ERROR",
-                                output: stderr
-                            });
+                const child = spawn(executablePath, [], {
+                    cwd: __dirname
+                });
 
-                            return;
-                        }
+                let programOutput = "";
+                let programError = "";
 
+                child.stdout.on("data", (data) => {
+                    programOutput += data.toString();
+                });
+
+                child.stderr.on("data", (data) => {
+                    programError += data.toString();
+                });
+
+                child.on("error", (error) => {
+                    cleanup(sourcePath, executablePath);
+
+                    resolve({
+                        status: "RUNTIME_ERROR",
+                        output: error.message
+                    });
+                });
+
+                child.on("close", (code) => {
+                    cleanup(sourcePath, executablePath);
+
+                    if (code !== 0) {
                         resolve({
-                            status: "SUCCESS",
-                            output: stdout
+                            status: "RUNTIME_ERROR",
+                            output: programError
                         });
+
+                        return;
                     }
-                );
+
+                    resolve({
+                        status: "SUCCESS",
+                        output: programOutput
+                    });
+                });
+
+                child.stdin.write(input);
+                child.stdin.end();
             }
         );
     });
