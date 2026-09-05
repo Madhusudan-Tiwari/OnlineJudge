@@ -4,7 +4,7 @@ const judgeSubmission = require("./judge");
 async function getNextSubmission() {
     const result = await pool.query(`
         UPDATE submissions
-        SET status = 'COMPILING'
+        SET status = 'RUNNING'
         WHERE id = (
             SELECT id
             FROM submissions
