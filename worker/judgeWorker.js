@@ -24,12 +24,14 @@ async function updateSubmission(submissionId, result) {
         `UPDATE submissions
          SET status = $1,
              error_details = $2,
-             failed_test_case_id = $3
-         WHERE id = $4`,
+             failed_test_case_id = $3,
+             execution_time_ms = $4
+         WHERE id = $5`,
         [
             result.status,
             result.error_details,
             result.failed_test_case_id,
+            result.execution_time_ms,
             submissionId
         ]
     );

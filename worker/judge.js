@@ -22,9 +22,12 @@ async function judgeSubmission(submission) {
         return {
             status: "COMPILATION_ERROR",
             failed_test_case_id: null,
-            error_details: compilation.output
+            error_details: compilation.output,
+            execution_time_ms: null
         };
     }
+
+    let totalExecutionTimeMs = 0;
 
     try {
         const result = await pool.query(
@@ -43,11 +46,14 @@ async function judgeSubmission(submission) {
                 testCase.input
             );
 
+            totalExecutionTimeMs += execution.executionTimeMs;
+
             if (execution.status !== "SUCCESS") {
                 return {
                     status: execution.status,
                     failed_test_case_id: testCase.id,
-                    error_details: execution.output
+                    error_details: execution.output,
+                    execution_time_ms: totalExecutionTimeMs
                 };
             }
 
@@ -58,7 +64,8 @@ async function judgeSubmission(submission) {
                 return {
                     status: "WRONG_ANSWER",
                     failed_test_case_id: testCase.id,
-                    error_details: null
+                    error_details: null,
+                    execution_time_ms: totalExecutionTimeMs
                 };
             }
         }
@@ -66,7 +73,8 @@ async function judgeSubmission(submission) {
         return {
             status: "ACCEPTED",
             failed_test_case_id: null,
-            error_details: null
+            error_details: null,
+            execution_time_ms: totalExecutionTimeMs
         };
     } finally {
         cleanup(

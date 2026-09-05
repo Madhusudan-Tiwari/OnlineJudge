@@ -52,6 +52,10 @@ function runExecutable(
     timeLimitMs = 2000
 ) {
     return new Promise((resolve) => {
+
+        // Start measuring execution time
+        const startTime = Date.now();
+
         const child = spawn(executablePath, [], {
             cwd: __dirname
         });
@@ -76,19 +80,25 @@ function runExecutable(
         child.on("error", (error) => {
             clearTimeout(timer);
 
+            const executionTimeMs = Date.now() - startTime;
+
             resolve({
                 status: "RUNTIME_ERROR",
-                output: error.message
+                output: error.message,
+                executionTimeMs
             });
         });
 
         child.on("close", (code) => {
             clearTimeout(timer);
 
+            const executionTimeMs = Date.now() - startTime;
+
             if (timedOut) {
                 resolve({
                     status: "TIME_LIMIT_EXCEEDED",
-                    output: "Execution time limit exceeded"
+                    output: "Execution time limit exceeded",
+                    executionTimeMs
                 });
 
                 return;
@@ -97,7 +107,8 @@ function runExecutable(
             if (code !== 0) {
                 resolve({
                     status: "RUNTIME_ERROR",
-                    output: programError
+                    output: programError,
+                    executionTimeMs
                 });
 
                 return;
@@ -105,7 +116,8 @@ function runExecutable(
 
             resolve({
                 status: "SUCCESS",
-                output: programOutput
+                output: programOutput,
+                executionTimeMs
             });
         });
 
