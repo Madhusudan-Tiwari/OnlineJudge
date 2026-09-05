@@ -1,9 +1,20 @@
-const { spawn } = require("child_process");
+const fs = require("fs");
 const path = require("path");
+const os = require("os");
+const { spawn } = require("child_process");
 
-function runDockerTest(sourcePath, input) {
+function runDocker(sourceCode, input) {
     return new Promise((resolve) => {
-        const containerSourcePath = "/tmp/main.cpp";
+        const fileName = `submission_${Date.now()}_${Math.random()
+            .toString(36)
+            .slice(2)}.cpp`;
+
+        const sourcePath = path.join(
+            os.tmpdir(),
+            fileName
+        );
+
+        fs.writeFileSync(sourcePath, sourceCode);
 
         const dockerArgs = [
             "run",
@@ -11,13 +22,21 @@ function runDockerTest(sourcePath, input) {
             "-i",
 
             "-v",
-            `${path.resolve(sourcePath)}:${containerSourcePath}:ro`,
+            `${sourcePath}:/tmp/main.cpp:ro`,
 
             "gcc:latest",
 
             "bash",
             "-c",
-            `g++ ${containerSourcePath} -o /tmp/main && /tmp/main`
+            `
+            g++ /tmp/main.cpp -o /tmp/main 2>/tmp/compile_error
+            if [ $? -ne 0 ]; then
+                cat /tmp/compile_error
+                exit 100
+            fi
+
+            /tmp/main
+            `
         ];
 
         const child = spawn("docker", dockerArgs);
@@ -34,20 +53,40 @@ function runDockerTest(sourcePath, input) {
         });
 
         child.on("error", (err) => {
+            cleanup(sourcePath);
+
             resolve({
-                success: false,
+                status: "RUNTIME_ERROR",
                 output: "",
                 error: err.message
             });
         });
 
         child.on("close", (code) => {
-            resolve({
-                success: code === 0,
-                output,
-                error,
-                exitCode: code
-            });
+            cleanup(sourcePath);
+
+            if (code === 0) {
+                resolve({
+                    status: "SUCCESS",
+                    output,
+                    error,
+                    exitCode: code
+                });
+            } else if (code === 100) {
+                resolve({
+                    status: "COMPILATION_ERROR",
+                    output,
+                    error,
+                    exitCode: code
+                });
+            } else {
+                resolve({
+                    status: "RUNTIME_ERROR",
+                    output,
+                    error,
+                    exitCode: code
+                });
+            }
         });
 
         child.stdin.write(input);
@@ -55,6 +94,12 @@ function runDockerTest(sourcePath, input) {
     });
 }
 
+function cleanup(sourcePath) {
+    if (fs.existsSync(sourcePath)) {
+        fs.unlinkSync(sourcePath);
+    }
+}
+
 module.exports = {
-    runDockerTest
+    runDocker
 };

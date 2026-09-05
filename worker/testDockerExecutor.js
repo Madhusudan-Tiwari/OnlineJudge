@@ -1,17 +1,23 @@
-const path = require("path");
-
 const {
-    runDockerTest
+    runDocker
 } = require("./dockerExecutor");
 
 async function test() {
-    const sourcePath = path.join(
-        __dirname,
-        "dockerTest.cpp"
-    );
+    const code = `
+#include <iostream>
 
-    const result = await runDockerTest(
-        sourcePath,
+int main() {
+    int a, b;
+    std::cin >> a >> b;
+
+    std::cout << a + b;
+
+    return 0;
+}
+`;
+
+    const result = await runDocker(
+        code,
         "10 25\n"
     );
 
