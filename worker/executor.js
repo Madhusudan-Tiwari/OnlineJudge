@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const { execFile, spawn } = require("child_process");
 
-function runCpp(sourceCode, input = "") {
+function runCpp(sourceCode, input = "", timeLimitMs = 2000) {
     return new Promise((resolve) => {
         const fileName = `submission_${Date.now()}`;
         const sourcePath = path.join(__dirname, `${fileName}.cpp`);
@@ -25,15 +25,18 @@ function runCpp(sourceCode, input = "") {
                     return;
                 }
 
-                console.log("Executable:", executablePath);
-                console.log("Exists:", fs.existsSync(executablePath));
-
                 const child = spawn(executablePath, [], {
                     cwd: __dirname
                 });
 
                 let programOutput = "";
                 let programError = "";
+                let timedOut = false;
+
+                const timer = setTimeout(() => {
+                    timedOut = true;
+                    child.kill();
+                }, timeLimitMs);
 
                 child.stdout.on("data", (data) => {
                     programOutput += data.toString();
@@ -44,6 +47,7 @@ function runCpp(sourceCode, input = "") {
                 });
 
                 child.on("error", (error) => {
+                    clearTimeout(timer);
                     cleanup(sourcePath, executablePath);
 
                     resolve({
@@ -53,7 +57,17 @@ function runCpp(sourceCode, input = "") {
                 });
 
                 child.on("close", (code) => {
+                    clearTimeout(timer);
                     cleanup(sourcePath, executablePath);
+
+                    if (timedOut) {
+                        resolve({
+                            status: "TIME_LIMIT_EXCEEDED",
+                            output: "Execution time limit exceeded"
+                        });
+
+                        return;
+                    }
 
                     if (code !== 0) {
                         resolve({
