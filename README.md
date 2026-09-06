@@ -408,7 +408,7 @@ Make sure the following are installed:
 ### 1. Clone the repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/Madhusudan-Tiwari/OnlineJudge.git
 cd OnlineJudge
 ```
 
@@ -427,7 +427,7 @@ Example:
 ```env
 DB_USER=your_user
 DB_HOST=localhost
-DB_NAME=online_judge
+DB_NAME=onlinejudge
 DB_PASSWORD=your_password
 DB_PORT=5432
 JWT_SECRET=your_secret
