@@ -49,6 +49,7 @@ async function judgeSubmission(submission) {
     }
 
     let totalExecutionTimeMs = 0;
+    let maxMemoryUsedKb = 0;
 
     for (const testCase of testCases) {
         const execution = dockerResult.results.find(
@@ -66,12 +67,24 @@ async function judgeSubmission(submission) {
 
         totalExecutionTimeMs += execution.execution_time_ms;
 
+        const memoryUsedKb = Number(execution.memory_used_kb);
+
+        if (Number.isFinite(memoryUsedKb)) {
+            maxMemoryUsedKb = Math.max(
+                maxMemoryUsedKb,
+                memoryUsedKb
+            );
+        }
+
         if (execution.status !== "SUCCESS") {
             return {
                 status: execution.status,
                 failed_test_case_id: testCase.id,
                 error_details: execution.error,
-                execution_time_ms: totalExecutionTimeMs
+                execution_time_ms: totalExecutionTimeMs,
+                memory_used_kb: maxMemoryUsedKb > 0
+                    ? maxMemoryUsedKb
+                    : null
             };
         }
 
@@ -85,7 +98,10 @@ async function judgeSubmission(submission) {
                 status: "WRONG_ANSWER",
                 failed_test_case_id: testCase.id,
                 error_details: null,
-                execution_time_ms: totalExecutionTimeMs
+                execution_time_ms: totalExecutionTimeMs,
+                memory_used_kb: maxMemoryUsedKb > 0
+                    ? maxMemoryUsedKb
+                    : null
             };
         }
     }
@@ -94,7 +110,10 @@ async function judgeSubmission(submission) {
         status: "ACCEPTED",
         failed_test_case_id: null,
         error_details: null,
-        execution_time_ms: totalExecutionTimeMs
+        execution_time_ms: totalExecutionTimeMs,
+        memory_used_kb: maxMemoryUsedKb > 0
+            ? maxMemoryUsedKb
+            : null
     };
 }
 

@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
 import { getSubmissions } from "../api";
 
-function SubmissionHistory({
-    onBack
-}) {
+function SubmissionHistory({ onBack, onSelectSubmission }) {
     const [submissions, setSubmissions] =
         useState([]);
 
@@ -72,9 +70,9 @@ function SubmissionHistory({
                             {submissions.map(
                                 (submission) => (
                                     <tr
-                                        key={
-                                            submission.id
-                                        }
+                                        key={submission.id}
+                                        onClick={() => onSelectSubmission(submission.id)}
+                                        className="submission-row"
                                     >
                                         <td>
                                             #

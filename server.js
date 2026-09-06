@@ -50,7 +50,8 @@ app.post("/submissions", authenticateToken, async (req, res) =>
         }
     });
 
-    app.get("/submissions", authenticateToken, async (req, res) => {
+
+app.get("/submissions", authenticateToken, async (req, res) => {
     try {
         const userId = req.user.userId;
 
@@ -66,11 +67,11 @@ app.post("/submissions", authenticateToken, async (req, res) =>
                 submissions.execution_time_ms,
                 submissions.memory_used_kb,
                 submissions.submitted_at
-            FROM submissions
-            JOIN problems
-            ON submissions.problem_id = problems.id
-            WHERE submissions.user_id = $1
-            ORDER BY submissions.submitted_at DESC`,
+             FROM submissions
+             JOIN problems
+               ON submissions.problem_id = problems.id
+             WHERE submissions.user_id = $1
+             ORDER BY submissions.submitted_at DESC`,
             [userId]
         );
 
@@ -88,16 +89,31 @@ app.post("/submissions", authenticateToken, async (req, res) =>
 app.get("/submissions/:id", authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
+        const userId = req.user.userId;
 
         const result = await pool.query(
-            `SELECT id, problem_id, language, status,
-                    error_details, failed_test_case_id,
-                    execution_time_ms, memory_used_kb,
-                    submitted_at
+            `SELECT
+                submissions.id,
+                submissions.problem_id,
+                problems.title AS problem_title,
+                submissions.code,
+                submissions.language,
+                submissions.status,
+                submissions.error_details,
+                submissions.failed_test_case_id,
+                submissions.execution_time_ms,
+                submissions.memory_used_kb,
+                submissions.submitted_at,
+                test_cases.input AS failed_test_input,
+                test_cases.expected_output AS failed_test_expected_output
              FROM submissions
-             WHERE id = $1
-                AND user_id = $2`,
-            [id, req.user.userId]
+             JOIN problems
+               ON submissions.problem_id = problems.id
+             LEFT JOIN test_cases
+               ON submissions.failed_test_case_id = test_cases.id
+             WHERE submissions.id = $1
+               AND submissions.user_id = $2`,
+            [id, userId]
         );
 
         if (result.rows.length === 0) {
@@ -107,6 +123,7 @@ app.get("/submissions/:id", authenticateToken, async (req, res) => {
         }
 
         res.json(result.rows[0]);
+
     } catch (error) {
         console.error(error);
 

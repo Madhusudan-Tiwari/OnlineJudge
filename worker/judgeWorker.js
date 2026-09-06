@@ -28,13 +28,15 @@ async function updateSubmission(submissionId, result) {
             error_details = $2,
             failed_test_case_id = $3,
             execution_time_ms = $4,
+            memory_used_kb = $5,
             started_at = NULL
-        WHERE id = $5`,
+        WHERE id = $6`,
         [
             result.status,
             result.error_details,
             result.failed_test_case_id,
             result.execution_time_ms,
+            result.memory_used_kb,
             submissionId
         ]
     );

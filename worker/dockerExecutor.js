@@ -70,6 +70,7 @@ function runDocker(sourceCode, testCases) {
 import json
 import subprocess
 import time
+import resource
 
 with open("/input/tests.json", "r") as f:
     tests = json.load(f)
@@ -88,6 +89,11 @@ for test in tests:
             capture_output=True,
             timeout=5
         )
+        memory_used_kb = int(
+            resource.getrusage(
+                resource.RUSAGE_CHILDREN
+            ).ru_maxrss
+        )
 
         execution_time_ms = int(
             (time.monotonic() - start) * 1000
@@ -104,6 +110,7 @@ for test in tests:
             "output": process.stdout,
             "error": process.stderr,
             "execution_time_ms": execution_time_ms,
+            "memory_used_kb": memory_used_kb,
             "exit_code": process.returncode
         })
 
@@ -114,12 +121,13 @@ for test in tests:
             "status": "TIME_LIMIT_EXCEEDED",
             "output": e.stdout or "",
             "error": "Execution time exceeded",
-            "execution_time_ms": 2000,
+            "execution_time_ms": 5000,
+            "memory_used_kb": None,
             "exit_code": None
         })
 
         break
-
+    
 print(json.dumps(results))
 PY
             `

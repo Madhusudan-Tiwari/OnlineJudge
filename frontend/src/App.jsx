@@ -1,5 +1,5 @@
 import { useState } from "react";
-
+import SubmissionDetails from "./components/SubmissionDetails";
 import Auth from "./components/Auth";
 import ProblemList from "./components/ProblemList";
 import ProblemPage from "./components/ProblemPage";
@@ -15,6 +15,8 @@ function App() {
 
     const [showSubmissions, setShowSubmissions] =
         useState(false);
+    const [selectedSubmission, setSelectedSubmission] =
+        useState(null);
 
     function handleLogin() {
         setLoggedIn(true);
@@ -37,6 +39,15 @@ function App() {
             <ProblemPage
                 problem={selectedProblem}
                 onBack={() => setSelectedProblem(null)}
+            />
+        );
+    }
+
+    if (selectedSubmission) {
+        return (
+            <SubmissionDetails
+                submissionId={selectedSubmission}
+                onBack={() => setSelectedSubmission(null)}
             />
         );
     }
@@ -66,9 +77,8 @@ function App() {
 
                 <main className="page">
                     <SubmissionHistory
-                        onBack={() =>
-                            setShowSubmissions(false)
-                        }
+                        onBack={() => setShowSubmissions(false)}
+                        onSelectSubmission={setSelectedSubmission}
                     />
                 </main>
             </>
