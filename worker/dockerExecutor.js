@@ -86,7 +86,7 @@ for test in tests:
             input=test["input"],
             text=True,
             capture_output=True,
-            timeout=2
+            timeout=5
         )
 
         execution_time_ms = int(
@@ -150,7 +150,7 @@ PY
                 results: [],
                 error: "Docker execution exceeded time limit"
             });
-        }, 15000);
+        }, 30000);
 
         child.stdout.on("data", (data) => {
             output += data.toString();

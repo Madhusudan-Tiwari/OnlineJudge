@@ -2,8 +2,11 @@ const express = require("express");
 const pool = require("./database/db");
 const authRouter = require("./auth/auth");
 const authenticateToken = require("./middleware/authMiddleware");
+const cors = require("cors");
+const { spawn } = require("child_process");
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 app.use("/auth", authRouter);
 
@@ -52,13 +55,22 @@ app.post("/submissions", authenticateToken, async (req, res) =>
         const userId = req.user.userId;
 
         const result = await pool.query(
-            `SELECT id, problem_id, language, status,
-                    error_details, failed_test_case_id,
-                    execution_time_ms, memory_used_kb,
-                    submitted_at
-             FROM submissions
-             WHERE user_id = $1
-             ORDER BY submitted_at DESC`,
+            `SELECT
+                submissions.id,
+                submissions.problem_id,
+                problems.title AS problem_title,
+                submissions.language,
+                submissions.status,
+                submissions.error_details,
+                submissions.failed_test_case_id,
+                submissions.execution_time_ms,
+                submissions.memory_used_kb,
+                submissions.submitted_at
+            FROM submissions
+            JOIN problems
+            ON submissions.problem_id = problems.id
+            WHERE submissions.user_id = $1
+            ORDER BY submissions.submitted_at DESC`,
             [userId]
         );
 
@@ -104,5 +116,26 @@ app.get("/submissions/:id", authenticateToken, async (req, res) => {
     }
 });
 
+const PORT = 3000;
 
-app.listen(3000, () => { console.log("Server running on port 3000"); });
+const worker = spawn(
+    process.execPath,
+    ["worker/judgeWorker.js"],
+    {
+        stdio: "inherit"
+    }
+);
+
+worker.on("error", (error) => {
+    console.error("Failed to start judge worker:", error);
+});
+
+worker.on("exit", (code, signal) => {
+    console.log(
+        `Judge worker exited. code=${code}, signal=${signal}`
+    );
+});
+
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});

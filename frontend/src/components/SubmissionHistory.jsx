@@ -90,9 +90,7 @@ function SubmissionHistory({
                                     </td>
 
                                     <td>
-                                        {
-                                            submission.problem_id
-                                        }
+                                        {submission.problem_title}
                                     </td>
 
                                     <td>
