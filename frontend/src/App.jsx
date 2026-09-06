@@ -3,16 +3,12 @@ import { useState } from "react";
 import Auth from "./components/Auth";
 import ProblemList from "./components/ProblemList";
 import ProblemPage from "./components/ProblemPage";
-import SubmissionHistory
-    from "./components/SubmissionHistory";
+import SubmissionHistory from "./components/SubmissionHistory";
 
 function App() {
-    const [loggedIn, setLoggedIn] =
-        useState(
-            Boolean(
-                localStorage.getItem("token")
-            )
-        );
+    const [loggedIn, setLoggedIn] = useState(
+        Boolean(localStorage.getItem("token"))
+    );
 
     const [selectedProblem, setSelectedProblem] =
         useState(null);
@@ -33,54 +29,82 @@ function App() {
     }
 
     if (!loggedIn) {
-        return (
-            <Auth onLogin={handleLogin} />
-        );
+        return <Auth onLogin={handleLogin} />;
     }
 
     if (selectedProblem) {
         return (
             <ProblemPage
                 problem={selectedProblem}
-                onBack={() =>
-                    setSelectedProblem(null)
-                }
+                onBack={() => setSelectedProblem(null)}
             />
         );
     }
 
     if (showSubmissions) {
         return (
-            <SubmissionHistory
-                onBack={() =>
-                    setShowSubmissions(false)
-                }
-            />
+            <>
+                <nav className="navbar">
+                    <div className="navbar-brand">
+                        Online Judge
+                    </div>
+
+                    <div className="navbar-actions">
+                        <button
+                            onClick={() =>
+                                setShowSubmissions(false)
+                            }
+                        >
+                            Problems
+                        </button>
+
+                        <button onClick={logout}>
+                            Logout
+                        </button>
+                    </div>
+                </nav>
+
+                <main className="page">
+                    <SubmissionHistory
+                        onBack={() =>
+                            setShowSubmissions(false)
+                        }
+                    />
+                </main>
+            </>
         );
     }
 
     return (
-        <div>
-            <nav>
-                <button
-                    onClick={() =>
-                        setShowSubmissions(true)
-                    }
-                >
-                    My Submissions
-                </button>
+        <>
+            <nav className="navbar">
+                <div className="navbar-brand">
+                    Online Judge
+                </div>
 
-                <button onClick={logout}>
-                    Logout
-                </button>
+                <div className="navbar-actions">
+                    <button
+                        onClick={() =>
+                            setShowSubmissions(true)
+                        }
+                    >
+                        My Submissions
+                    </button>
+
+                    <button onClick={logout}>
+                        Logout
+                    </button>
+                </div>
             </nav>
 
-            <ProblemList
-                onSelectProblem={
-                    setSelectedProblem
-                }
-            />
-        </div>
+            <main className="page">
+                <ProblemList
+                    onSelectProblem={
+                        setSelectedProblem
+                    }
+                />
+            </main>
+        </>
     );
 }
 

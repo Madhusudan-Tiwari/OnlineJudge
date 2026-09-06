@@ -25,12 +25,9 @@ function SubmissionHistory({
                 await getSubmissions();
 
             setSubmissions(data);
-
         } catch (error) {
             console.error(error);
-
             setMessage(error.message);
-
         } finally {
             setLoading(false);
         }
@@ -41,82 +38,82 @@ function SubmissionHistory({
     }
 
     if (message) {
-        return (
-            <div>
-                <button onClick={onBack}>
-                    ← Back
-                </button>
-
-                <p>{message}</p>
-            </div>
-        );
+        return <p>{message}</p>;
     }
 
     return (
         <div>
-            <button onClick={onBack}>
-                ← Back to Problems
-            </button>
-
-            <h1>My Submissions</h1>
+            <div className="page-header">
+                <div>
+                    <h1>My Submissions</h1>
+                    <p>
+                        View your previous submissions
+                        and their results.
+                    </p>
+                </div>
+            </div>
 
             {submissions.length === 0 ? (
                 <p>No submissions yet.</p>
             ) : (
-                <table>
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Problem</th>
-                            <th>Language</th>
-                            <th>Status</th>
-                            <th>Time</th>
-                        </tr>
-                    </thead>
+                <div className="submission-table-container">
+                    <table className="submission-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Problem</th>
+                                <th>Language</th>
+                                <th>Status</th>
+                                <th>Time</th>
+                            </tr>
+                        </thead>
 
-                    <tbody>
-                        {submissions.map(
-                            (submission) => (
-                                <tr
-                                    key={
-                                        submission.id
-                                    }
-                                >
-                                    <td>
-                                        #
-                                        {
+                        <tbody>
+                            {submissions.map(
+                                (submission) => (
+                                    <tr
+                                        key={
                                             submission.id
                                         }
-                                    </td>
+                                    >
+                                        <td>
+                                            #
+                                            {
+                                                submission.id
+                                            }
+                                        </td>
 
-                                    <td>
-                                        {submission.problem_title}
-                                    </td>
+                                        <td>
+                                            {
+                                                submission.problem_title
+                                            }
+                                        </td>
 
-                                    <td>
-                                        {
-                                            submission.language
-                                        }
-                                    </td>
+                                        <td>
+                                            {submission.language.toUpperCase()}
+                                        </td>
 
-                                    <td>
-                                        {
-                                            submission.status
-                                        }
-                                    </td>
+                                        <td
+                                            className={`status ${submission.status}`}
+                                        >
+                                            {
+                                                submission.status
+                                            }
+                                        </td>
 
-                                    <td>
-                                        {
-                                            submission.execution_time_ms ??
-                                            "-"
-                                        }{" "}
-                                        ms
-                                    </td>
-                                </tr>
-                            )
-                        )}
-                    </tbody>
-                </table>
+                                        <td>
+                                            {
+                                                submission.execution_time_ms ??
+                                                "-"
+                                            }{" "}
+                                            ms
+                                        </td>
+                                    </tr>
+                                )
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             )}
         </div>
     );

@@ -17,12 +17,9 @@ function ProblemList({ onSelectProblem }) {
             const data = await getProblems();
 
             setProblems(data);
-
         } catch (error) {
             console.error(error);
-
             setMessage(error.message);
-
         } finally {
             setLoading(false);
         }
@@ -38,27 +35,55 @@ function ProblemList({ onSelectProblem }) {
 
     return (
         <div>
-            <h1>Problems</h1>
+            <div className="page-header">
+                <div>
+                    <h1>Problems</h1>
+                    <p>
+                        Practice programming problems
+                        and submit your solutions.
+                    </p>
+                </div>
+            </div>
 
             {problems.length === 0 ? (
                 <p>No problems available.</p>
             ) : (
-                problems.map((problem) => (
-                    <div key={problem.id}>
-                        <button
-                            onClick={() =>
-                                onSelectProblem(problem)
-                            }
-                        >
-                            {problem.title}
-                        </button>
+                <div className="problem-list">
+                    {problems.map((problem) => {
+                        const difficulty =
+                            problem.difficulty?.toLowerCase();
 
-                        <p>
-                            Difficulty:{" "}
-                            {problem.difficulty}
-                        </p>
-                    </div>
-                ))
+                        return (
+                            <div
+                                className="problem-card"
+                                key={problem.id}
+                            >
+                                <div className="problem-info">
+                                    <h3>
+                                        {problem.title}
+                                    </h3>
+
+                                    <p
+                                        className={`difficulty ${difficulty}`}
+                                    >
+                                        {problem.difficulty}
+                                    </p>
+                                </div>
+
+                                <button
+                                    className="primary-button"
+                                    onClick={() =>
+                                        onSelectProblem(
+                                            problem
+                                        )
+                                    }
+                                >
+                                    Solve
+                                </button>
+                            </div>
+                        );
+                    })}
+                </div>
             )}
         </div>
     );

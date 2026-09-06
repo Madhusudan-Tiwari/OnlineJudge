@@ -18,8 +18,7 @@ function Auth({ onLogin }) {
     function handleChange(event) {
         setForm({
             ...form,
-            [event.target.name]:
-                event.target.value
+            [event.target.name]: event.target.value
         });
     }
 
@@ -39,8 +38,6 @@ function Auth({ onLogin }) {
                     "token",
                     data.token
                 );
-
-                setMessage("Login successful!");
 
                 onLogin();
             } else {
@@ -62,86 +59,96 @@ function Auth({ onLogin }) {
                     password: ""
                 });
             }
-
         } catch (error) {
             console.error(error);
-
             setMessage(error.message);
         }
     }
 
     return (
-        <div>
-            <h1>Online Judge</h1>
+        <div className="auth-page">
+            <div className="auth-card">
+                <h1>Online Judge</h1>
 
-            <button
-                onClick={() => {
-                    setMode("login");
-                    setMessage("");
-                }}
-            >
-                Login
-            </button>
+                <div className="auth-tabs">
+                    <button
+                        className={
+                            mode === "login"
+                                ? "active"
+                                : ""
+                        }
+                        onClick={() => {
+                            setMode("login");
+                            setMessage("");
+                        }}
+                    >
+                        Login
+                    </button>
 
-            <button
-                onClick={() => {
-                    setMode("register");
-                    setMessage("");
-                }}
-            >
-                Register
-            </button>
+                    <button
+                        className={
+                            mode === "register"
+                                ? "active"
+                                : ""
+                        }
+                        onClick={() => {
+                            setMode("register");
+                            setMessage("");
+                        }}
+                    >
+                        Register
+                    </button>
+                </div>
 
-            <h2>
-                {mode === "login"
-                    ? "Login"
-                    : "Register"}
-            </h2>
+                <h2>
+                    {mode === "login"
+                        ? "Welcome back"
+                        : "Create account"}
+                </h2>
 
-            <form onSubmit={handleSubmit}>
-
-                {mode === "register" && (
-                    <>
+                <form
+                    className="auth-form"
+                    onSubmit={handleSubmit}
+                >
+                    {mode === "register" && (
                         <input
                             name="username"
                             placeholder="Username"
                             value={form.username}
                             onChange={handleChange}
                         />
+                    )}
 
-                        <br />
-                    </>
-                )}
+                    <input
+                        name="email"
+                        type="email"
+                        placeholder="Email"
+                        value={form.email}
+                        onChange={handleChange}
+                    />
 
-                <input
-                    name="email"
-                    type="email"
-                    placeholder="Email"
-                    value={form.email}
-                    onChange={handleChange}
-                />
+                    <input
+                        name="password"
+                        type="password"
+                        placeholder="Password"
+                        value={form.password}
+                        onChange={handleChange}
+                    />
 
-                <br />
+                    <button
+                        className="primary-button"
+                        type="submit"
+                    >
+                        {mode === "login"
+                            ? "Login"
+                            : "Create Account"}
+                    </button>
+                </form>
 
-                <input
-                    name="password"
-                    type="password"
-                    placeholder="Password"
-                    value={form.password}
-                    onChange={handleChange}
-                />
-
-                <br />
-
-                <button type="submit">
-                    {mode === "login"
-                        ? "Login"
-                        : "Register"}
-                </button>
-
-            </form>
-
-            <p>{message}</p>
+                <p className="auth-message">
+                    {message}
+                </p>
+            </div>
         </div>
     );
 }

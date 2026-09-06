@@ -41,12 +41,9 @@ function ProblemPage({
             await pollSubmission(
                 submission.id
             );
-
         } catch (error) {
             console.error(error);
-
             setSubmitMessage(error.message);
-
         } finally {
             setSubmitting(false);
         }
@@ -84,7 +81,6 @@ function ProblemPage({
                             1000
                         )
                 );
-
             } catch (error) {
                 console.error(error);
 
@@ -99,53 +95,83 @@ function ProblemPage({
 
     return (
         <div>
-            <button onClick={onBack}>
-                ← Back to Problems
-            </button>
+            <nav className="navbar">
+                <div className="navbar-brand">
+                    Online Judge
+                </div>
 
-            <h1>{problem.title}</h1>
+                <div className="navbar-actions">
+                    <button onClick={onBack}>
+                        Problems
+                    </button>
+                </div>
+            </nav>
 
-            <p>
-                Difficulty:{" "}
-                {problem.difficulty}
-            </p>
+            <div className="problem-layout">
+                <section className="problem-description">
+                    <button
+                        className="back-button"
+                        onClick={onBack}
+                    >
+                        ← Back to Problems
+                    </button>
 
-            <h2>Problem Statement</h2>
+                    <h1>{problem.title}</h1>
 
-            <p>
-                {problem.statement}
-            </p>
+                    <p
+                        className={`difficulty ${problem.difficulty?.toLowerCase()}`}
+                    >
+                        {problem.difficulty}
+                    </p>
 
-            <h2>Constraints</h2>
+                    <h2>
+                        Problem Statement
+                    </h2>
 
-            <p>
-                {problem.constraints}
-            </p>
+                    <p>
+                        {problem.statement}
+                    </p>
 
-            <h2>Code</h2>
+                    <h2>Constraints</h2>
 
-            <textarea
-                rows="20"
-                cols="80"
-                placeholder="Write your C++ code here..."
-                value={code}
-                onChange={(event) =>
-                    setCode(event.target.value)
-                }
-            />
+                    <p>
+                        {problem.constraints}
+                    </p>
+                </section>
 
-            <br />
+                <section className="editor-section">
+                    <div className="editor-header">
+                        <h2>C++</h2>
+                    </div>
 
-            <button
-                onClick={submitCode}
-                disabled={submitting}
-            >
-                {submitting
-                    ? "Judging..."
-                    : "Submit"}
-            </button>
+                    <textarea
+                        className="editor"
+                        placeholder="Write your C++ code here..."
+                        value={code}
+                        onChange={(event) =>
+                            setCode(
+                                event.target.value
+                            )
+                        }
+                    />
 
-            <p>{submitMessage}</p>
+                    <div className="submit-section">
+                        <button
+                            className="primary-button"
+                            onClick={submitCode}
+                            disabled={submitting}
+                        >
+                            {submitting
+                                ? "Judging..."
+                                : "Submit"}
+                        </button>
+
+                        <p className="submit-message">
+                            {submitMessage}
+                        </p>
+                    </div>
+                </section>
+            </div>
         </div>
     );
 }
