@@ -4,7 +4,9 @@ const judgeSubmission = require("./judge");
 async function getNextSubmission() {
     const result = await pool.query(`
         UPDATE submissions
-        SET status = 'RUNNING'
+        SET
+            status = 'RUNNING',
+            started_at = CURRENT_TIMESTAMP
         WHERE id = (
             SELECT id
             FROM submissions
@@ -22,11 +24,12 @@ async function getNextSubmission() {
 async function updateSubmission(submissionId, result) {
     await pool.query(
         `UPDATE submissions
-         SET status = $1,
-             error_details = $2,
-             failed_test_case_id = $3,
-             execution_time_ms = $4
-         WHERE id = $5`,
+        SET status = $1,
+            error_details = $2,
+            failed_test_case_id = $3,
+            execution_time_ms = $4,
+            started_at = NULL
+        WHERE id = $5`,
         [
             result.status,
             result.error_details,
@@ -37,11 +40,31 @@ async function updateSubmission(submissionId, result) {
     );
 }
 
+async function recoverStaleSubmissions() {
+    const result = await pool.query(`
+        UPDATE submissions
+        SET
+            status = 'PENDING',
+            started_at = NULL
+        WHERE status = 'RUNNING'
+          AND started_at < CURRENT_TIMESTAMP - INTERVAL '30 seconds'
+        RETURNING id
+    `);
+
+    for (const submission of result.rows) {
+        console.log(
+            `Recovered stale submission #${submission.id}`
+        );
+    }
+}
+
 async function worker() {
     console.log("Judge worker started");
 
     while (true) {
         try {
+            await recoverStaleSubmissions();
+            
             const submission = await getNextSubmission();
 
             if (submission) {

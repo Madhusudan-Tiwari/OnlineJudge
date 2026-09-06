@@ -3,49 +3,132 @@ const path = require("path");
 const os = require("os");
 const { spawn } = require("child_process");
 
-function runDocker(sourceCode, input) {
+function runDocker(sourceCode, testCases) {
     return new Promise((resolve) => {
-        const fileName = `submission_${Date.now()}_${Math.random()
+        const id = `${Date.now()}_${Math.random()
             .toString(36)
-            .slice(2)}.cpp`;
+            .slice(2)}`;
 
         const sourcePath = path.join(
             os.tmpdir(),
-            fileName
+            `submission_${id}.cpp`
+        );
+
+        const testsPath = path.join(
+            os.tmpdir(),
+            `tests_${id}.json`
         );
 
         fs.writeFileSync(sourcePath, sourceCode);
+
+        const inputs = testCases.map(testCase => ({
+            id: testCase.id,
+            input: testCase.input
+        }));
+
+        fs.writeFileSync(
+            testsPath,
+            JSON.stringify(inputs)
+        );
 
         const dockerArgs = [
             "run",
             "--rm",
             "-i",
 
-            // Limit container to one CPU
             "--cpus=1",
             "--memory=256m",
             "--memory-swap=256m",
-            // Mount source code as read-only
+            "--pids-limit=64",
+
+            "--network=none",
+
+            "--read-only",
+
+            "--tmpfs",
+            "/tmp:rw,exec,nosuid,size=64m",
+
             "-v",
-            `${sourcePath}:/tmp/main.cpp:ro`,
+            `${sourcePath}:/input/main.cpp:ro`,
+
+            "-v",
+            `${testsPath}:/input/tests.json:ro`,
 
             "gcc:latest",
 
             "bash",
             "-c",
             `
-            g++ /tmp/main.cpp -o /tmp/main 2>/tmp/compile_error
+            g++ /input/main.cpp -o /tmp/main 2>/tmp/compile_error
 
             if [ $? -ne 0 ]; then
                 cat /tmp/compile_error
                 exit 100
             fi
 
-            /tmp/main
+            python3 - <<'PY'
+import json
+import subprocess
+import time
+
+with open("/input/tests.json", "r") as f:
+    tests = json.load(f)
+
+results = []
+
+for test in tests:
+
+    start = time.monotonic()
+
+    try:
+        process = subprocess.run(
+            ["/tmp/main"],
+            input=test["input"],
+            text=True,
+            capture_output=True,
+            timeout=2
+        )
+
+        execution_time_ms = int(
+            (time.monotonic() - start) * 1000
+        )
+
+        if process.returncode == 0:
+            status = "SUCCESS"
+        else:
+            status = "RUNTIME_ERROR"
+
+        results.append({
+            "id": test["id"],
+            "status": status,
+            "output": process.stdout,
+            "error": process.stderr,
+            "execution_time_ms": execution_time_ms,
+            "exit_code": process.returncode
+        })
+
+    except subprocess.TimeoutExpired as e:
+
+        results.append({
+            "id": test["id"],
+            "status": "TIME_LIMIT_EXCEEDED",
+            "output": e.stdout or "",
+            "error": "Execution time exceeded",
+            "execution_time_ms": 2000,
+            "exit_code": None
+        })
+
+        break
+
+print(json.dumps(results))
+PY
             `
         ];
 
-        const child = spawn("docker", dockerArgs);
+        const child = spawn(
+            "docker",
+            dockerArgs
+        );
 
         let output = "";
         let error = "";
@@ -60,15 +143,14 @@ function runDocker(sourceCode, input) {
 
             child.kill("SIGKILL");
 
-            cleanup(sourcePath);
+            cleanup(sourcePath, testsPath);
 
             resolve({
                 status: "TIME_LIMIT_EXCEEDED",
-                output,
-                error: "Execution time exceeded",
-                exitCode: null
+                results: [],
+                error: "Docker execution exceeded time limit"
             });
-        }, 2000);
+        }, 15000);
 
         child.stdout.on("data", (data) => {
             output += data.toString();
@@ -86,13 +168,13 @@ function runDocker(sourceCode, input) {
             finished = true;
 
             clearTimeout(timeout);
-            cleanup(sourcePath);
+
+            cleanup(sourcePath, testsPath);
 
             resolve({
                 status: "RUNTIME_ERROR",
-                output: "",
-                error: err.message,
-                exitCode: null
+                results: [],
+                error: err.message
             });
         });
 
@@ -104,47 +186,62 @@ function runDocker(sourceCode, input) {
             finished = true;
 
             clearTimeout(timeout);
-            cleanup(sourcePath);
+
+            cleanup(sourcePath, testsPath);
 
             if (code === 0) {
-                resolve({
-                    status: "SUCCESS",
-                    output,
-                    error,
-                    exitCode: code
-                });
+                try {
+                    const results = JSON.parse(
+                        output.trim()
+                    );
+
+                    resolve({
+                        status: "SUCCESS",
+                        results,
+                        error
+                    });
+                } catch (parseError) {
+                    resolve({
+                        status: "RUNTIME_ERROR",
+                        results: [],
+                        error:
+                            "Invalid sandbox output: " +
+                            parseError.message
+                    });
+                }
             } else if (code === 100) {
                 resolve({
                     status: "COMPILATION_ERROR",
-                    output,
-                    error,
-                    exitCode: code
+                    results: [],
+                    error: output || error
                 });
             } else if (code === 137) {
                 resolve({
                     status: "MEMORY_LIMIT_EXCEEDED",
-                    output,
-                    error,
-                    exitCode: code
+                    results: [],
+                    error: error || output
                 });
             } else {
                 resolve({
                     status: "RUNTIME_ERROR",
-                    output,
-                    error,
+                    results: [],
+                    error: error || output,
                     exitCode: code
                 });
             }
         });
 
-        child.stdin.write(input);
         child.stdin.end();
     });
 }
 
-function cleanup(sourcePath) {
+function cleanup(sourcePath, testsPath) {
     if (fs.existsSync(sourcePath)) {
         fs.unlinkSync(sourcePath);
+    }
+
+    if (fs.existsSync(testsPath)) {
+        fs.unlinkSync(testsPath);
     }
 }
 
